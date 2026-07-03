@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Viral Genome Intelligence"
+version = "1.0.0"
+id = "artifacts/genome-search"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23018
+
+[services.development]
+run = "pnpm --filter @workspace/genome-search run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/genome-search", "run", "build" ]
+publicDir = "artifacts/genome-search/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23018"
+BASE_PATH = "/"

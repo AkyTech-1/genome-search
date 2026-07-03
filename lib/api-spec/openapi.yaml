@@ -1,0 +1,242 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Viral Genome Intelligence API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: viruses
+    description: Pathogen database
+  - name: blast
+    description: NCBI BLAST integration
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /viruses:
+    get:
+      operationId: listViruses
+      tags: [viruses]
+      summary: List all viruses in the database
+      responses:
+        "200":
+          description: List of viruses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Virus"
+
+  /blast/submit:
+    post:
+      operationId: blastSubmit
+      tags: [blast]
+      summary: Submit a nucleotide sequence to NCBI BLAST
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlastSubmitRequest"
+      responses:
+        "200":
+          description: BLAST job submitted; returns RID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlastJobId"
+        "400":
+          description: Invalid sequence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: NCBI error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /blast/results:
+    get:
+      operationId: blastResults
+      tags: [blast]
+      summary: Poll NCBI BLAST results for a given RID
+      parameters:
+        - name: rid
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Current job status and hits if done
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlastPollResponse"
+        "400":
+          description: Missing or invalid rid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: RID expired or not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: NCBI error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    Virus:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        family:
+          type: string
+        genome_type:
+          type: string
+        host:
+          type: string
+        discovery_year:
+          type: integer
+        pandemic_risk:
+          type: string
+        genome_size_kb:
+          type: number
+        description:
+          type: string
+        ncbi_accession:
+          type: string
+        fasta_sequence:
+          type: string
+        vaccines:
+          type: array
+          items:
+            type: string
+        symptoms:
+          type: array
+          items:
+            type: string
+        transmission:
+          type: array
+          items:
+            type: string
+        mortality_rate:
+          type: string
+        geographic_distribution:
+          type: string
+      required:
+        - id
+        - name
+        - family
+        - genome_type
+        - host
+        - discovery_year
+        - pandemic_risk
+        - genome_size_kb
+        - description
+        - ncbi_accession
+        - fasta_sequence
+        - vaccines
+        - symptoms
+        - transmission
+        - mortality_rate
+        - geographic_distribution
+
+    BlastSubmitRequest:
+      type: object
+      properties:
+        sequence:
+          type: string
+        program:
+          type: string
+        database:
+          type: string
+      required:
+        - sequence
+
+    BlastJobId:
+      type: object
+      properties:
+        rid:
+          type: string
+      required:
+        - rid
+
+    BlastHit:
+      type: object
+      properties:
+        accession:
+          type: string
+        title:
+          type: string
+        score:
+          type: integer
+        evalue:
+          type: string
+        identity:
+          type: integer
+      required:
+        - accession
+        - title
+        - score
+        - evalue
+        - identity
+
+    BlastPollResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [waiting, done]
+        hits:
+          type: array
+          items:
+            $ref: "#/components/schemas/BlastHit"
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
